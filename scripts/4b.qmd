@@ -1,0 +1,219 @@
+---
+title: "4b script"
+format: html
+editor: visual
+---
+
+### Preprocessing
+
+```{r}
+set.seed(110122)
+source('4bpreprocessing.R')
+load('../data/claims-raw.RData')
+```
+
+```{r}
+claims_clean <- claims_raw %>%
+  parse_data() %>%
+  add_tokens() 
+
+claims_model <- claims_clean %>%
+  select(.id, bclass, mclass, tokens)
+
+save(claims_model, file = '../data/4b-cleaned-data.RData')
+```
+
+```{r}
+#testing
+nrow(claims_raw); nrow(claims_model)
+anyDuplicated(claims_model$.id)             # should be 0
+sum(claims_model$tokens == '')              # pages with no tokens
+claims_model$tokens[1] %>% str_sub(1, 300)  # look at one page
+```
+
+### Linear Support Vector Machine
+
+```{r}
+library(tidymodels)
+library(textrecipes)
+```
+
+```{r}
+set.seed(110122)
+# load cleaned data
+load('../data/4b-cleaned-data.RData')
+partitions <- claims_model %>%
+  initial_split(prop = 0.8, strata = mclass)
+
+train_df <- training(partitions)
+test_df  <- testing(partitions)
+```
+
+```{r}
+make_wf <- function(target, data){
+  
+  rec <- recipe(as.formula(paste(target, '~ tokens')), data = data) %>%
+    step_tokenize(tokens, token = 'regex',
+                  options = list(pattern = '\\s+')) %>%
+    step_tokenfilter(tokens, min_times = 3, max_tokens = 10000) %>%
+    step_tfidf(tokens, norm = 'l2', sublinear_tf = TRUE)
+  
+  # L2-regularized linear SVM; multiclass is one-vs-rest
+  spec <- svm_linear(cost = tune()) %>%
+    set_mode('classification') %>%
+    set_engine('LiblineaR')
+  
+  workflow() %>%
+    add_recipe(rec) %>%
+    add_model(spec)
+}
+```
+
+#### 5-fold stratified CV, tuning cost
+
+```{r}
+cost_grid   <- tibble(cost = c(0.01, 0.03, 0.1, 0.3, 1, 3, 10, 30))
+svm_metrics <- metric_set(accuracy, f_meas)
+
+set.seed(110122)
+folds_m <- train_df %>%
+  mutate(.y = mclass) %>%
+  vfold_cv(v = 5, strata = .y)
+
+wf_m <- make_wf('mclass', train_df)
+
+tune_m <- tune_grid(wf_m,
+                    resamples = folds_m,
+                    grid      = cost_grid,
+                    metrics   = svm_metrics)
+
+collect_metrics(tune_m)
+autoplot(tune_m)
+```
+
+```{r}
+best_m <- select_best(tune_m, metric = 'accuracy')
+```
+
+### Final Model
+
+```{r}
+fit_m <- last_fit(finalize_workflow(wf_m, best_m),
+                  split = partitions, metrics = svm_metrics)
+
+
+```
+
+```{r}
+final_fit <- extract_workflow(fit_m)
+saveRDS(final_fit, '../results/4b-svm-multiclass.rds')
+```
+
+### Test Metrics
+
+```{r}
+ho_preds <- collect_predictions(fit_m)
+
+report_metrics <- function(truth, pred){
+  pred_tbl <- table(truth = truth,
+                    pred  = factor(pred, levels = levels(truth)))
+  
+  recall    <- diag(pred_tbl) / rowSums(pred_tbl)
+  precision <- diag(pred_tbl) / colSums(pred_tbl)
+  f1        <- 2 * precision * recall / (precision + recall)
+  
+  list(
+    table = pred_tbl,
+    by_class = tibble(
+      class          = rownames(pred_tbl),
+      n              = as.integer(rowSums(pred_tbl)),
+      classwise      = round(recall, 3),
+      predictionwise = round(precision, 3),
+      f1             = round(f1, 3)
+    ),
+    summary = tibble(
+      overall_accuracy = round(sum(diag(pred_tbl)) / sum(pred_tbl), 3),
+      macro_f1         = round(mean(replace_na(f1, 0)), 3)
+    )
+  )
+}
+
+ho_metrics <- report_metrics(ho_preds$mclass, ho_preds$.pred_class)
+
+# Create shorter labels for display
+short_labels <- c(
+  "N/A",
+  "Physical",
+  "Fatality",
+  "Unlawful",
+  "Other"
+)
+
+# Rename confusion matrix dimensions
+display_tbl <- ho_metrics$table
+
+dimnames(display_tbl) <- list(
+  truth = short_labels,
+  pred = short_labels
+)
+display_tbl
+
+# Per-class metrics
+metric_tbl <- ho_metrics$by_class
+
+metric_tbl <- metric_tbl %>%
+  mutate(
+    class = short_labels,
+    across(
+      c(classwise, predictionwise, f1),
+      ~ round(.x * 100, 2)
+    )
+  ) %>%
+  rename(
+    Class = class,
+    Observations = n,
+    Classwise = classwise,
+    Predictionwise = predictionwise,
+    `F1 Score` = f1
+  )
+
+metric_tbl
+
+#overall accuracy
+sum(diag(ho_metrics$table)) / sum(ho_metrics$table)
+```
+
+### Predictions for claims-test.RData
+
+```{r}
+load('../data/claims-test.RData')
+```
+
+```{r}
+test_ids   <- claims_test$.id
+test_clean <- claims_test %>% parse_data() %>% add_tokens()
+
+pred_m <- tibble(
+  .id         = test_clean$.id,
+  mclass.pred = predict(final_fit, test_clean)$.pred_class
+)
+
+# pages removed by the '<!' filter in parse_data() still get a prediction
+# (majority class in the training data) so there is one row per test id
+majority <- names(which.max(table(claims_model$mclass)))
+
+pred_df <- tibble(.id = test_ids) %>%
+  left_join(pred_m, by = '.id') %>%
+  mutate(mclass.pred = coalesce(
+    mclass.pred,
+    factor(majority, levels = levels(claims_model$mclass)))) %>%
+  select(.id, mclass.pred)
+
+stopifnot(nrow(pred_df) == length(test_ids),
+          !anyNA(pred_df$mclass.pred))
+
+pred_df
+table(pred_df$mclass.pred)
+
+save(pred_df, file = '../results/4b-mclass-preds.RData')
+```
