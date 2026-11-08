@@ -115,72 +115,58 @@ saveRDS(final_fit, '../results/4b-svm-multiclass.rds')
 ho_preds <- collect_predictions(fit_m)
 
 report_metrics <- function(truth, pred){
-  pred_tbl <- table(truth = truth,
-                    pred  = factor(pred, levels = levels(truth)))
+  tbl <- table(truth = truth, pred = factor(pred, levels = levels(truth)))
+  N  <- sum(tbl)
+  tp <- diag(tbl)
+  fn <- rowSums(tbl) - tp
+  fp <- colSums(tbl) - tp
+  tn <- N - tp - fn - fp
   
-  recall    <- diag(pred_tbl) / rowSums(pred_tbl)
-  precision <- diag(pred_tbl) / colSums(pred_tbl)
-  f1        <- 2 * precision * recall / (precision + recall)
+  sens <- tp / (tp + fn)            # classwise accuracy (recall)
+  spec <- tn / (tn + fp)
+  prec <- tp / (tp + fp)            # NaN if a class is never predicted
+  f1   <- 2 * prec * sens / (prec + sens)
   
   list(
-    table = pred_tbl,
-    by_class = tibble(
-      class          = rownames(pred_tbl),
-      n              = as.integer(rowSums(pred_tbl)),
-      classwise      = round(recall, 3),
-      predictionwise = round(precision, 3),
-      f1             = round(f1, 3)
-    ),
-    summary = tibble(
-      overall_accuracy = round(sum(diag(pred_tbl)) / sum(pred_tbl), 3),
-      macro_f1         = round(mean(replace_na(f1, 0)), 3)
-    )
+    table = tbl,
+    by_class = tibble(class = rownames(tbl), n = as.integer(rowSums(tbl)),
+                      sensitivity = sens, specificity = spec,
+                      precision = prec, f1 = f1),
+    summary = tibble(accuracy          = sum(tp) / N,
+                     sensitivity_macro = mean(sens),
+                     specificity_macro = mean(spec),
+                     f1_macro          = mean(replace_na(f1, 0)))
   )
 }
 
 ho_metrics <- report_metrics(ho_preds$mclass, ho_preds$.pred_class)
 
-# Create shorter labels for display
-short_labels <- c(
-  "N/A",
-  "Physical",
-  "Fatality",
-  "Unlawful",
-  "Other"
-)
+# shorter labels for display; check the order matches the factor levels
+short_labels <- c("N/A", "Physical", "Fatality", "Unlawful", "Other")
+stopifnot(length(short_labels) == nlevels(ho_preds$mclass))
+levels(ho_preds$mclass)   # must line up with short_labels
 
-# Rename confusion matrix dimensions
+# confusion matrix
 display_tbl <- ho_metrics$table
-
-dimnames(display_tbl) <- list(
-  truth = short_labels,
-  pred = short_labels
-)
+dimnames(display_tbl) <- list(truth = short_labels, pred = short_labels)
 display_tbl
 
-# Per-class metrics
-metric_tbl <- ho_metrics$by_class
+# per-class table (%), plus macro average row
+pct <- function(x) round(x * 100, 1)
 
-metric_tbl <- metric_tbl %>%
-  mutate(
-    class = short_labels,
-    across(
-      c(classwise, predictionwise, f1),
-      ~ round(.x * 100, 2)
-    )
-  ) %>%
-  rename(
-    Class = class,
-    Observations = n,
-    Classwise = classwise,
-    Predictionwise = predictionwise,
-    `F1 Score` = f1
-  )
-
+metric_tbl <- ho_metrics$by_class %>%
+  mutate(class = short_labels) %>%
+  transmute(Class = class, Observations = n,
+            `Sensitivity (%)` = pct(sensitivity),
+            `Specificity (%)` = pct(specificity)) %>%
+  bind_rows(tibble(Class = "Macro average",
+                   Observations = sum(ho_metrics$by_class$n),
+                   `Sensitivity (%)` = pct(ho_metrics$summary$sensitivity_macro),
+                   `Specificity (%)` = pct(ho_metrics$summary$specificity_macro)))
 metric_tbl
 
-#overall accuracy
-sum(diag(ho_metrics$table)) / sum(ho_metrics$table)
+# overall accuracy (%)
+pct(ho_metrics$summary$accuracy)
 ```
 
 ### Predictions for claims-test.RData
