@@ -1,6 +1,6 @@
 library(glmnet)
 library(yardstick)
-source('scripts/4apreprocessing.R')
+source('scripts/primary/4apreprocessing.R')
 
 load('data/claims-raw.RData')   
 set.seed(197)

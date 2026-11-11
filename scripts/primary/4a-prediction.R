@@ -1,4 +1,4 @@
-source('scripts/4apreprocessing.R')
+source('scripts/primary/4apreprocessing.R')
 library(glmnet)
 load('data/claims-test.RData')            
 mod <- readRDS('results/bclass-glmnet.rds')
