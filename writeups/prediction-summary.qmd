@@ -14,24 +14,41 @@ Provide a 3-5 sentence summary of your work on the primary task. Indicate what i
 
 In one paragraph lay out your preprocessing pipeline. No need to provide exact step-by-step detail; just give an overview of the main components:
 
--   what text content was extracted from HTML
+- what text content was extracted from HTML
 
--   how text was cleaned
+- how text was cleaned
 
--   how cleaned text was represented quantitatively
+- how cleaned text was represented quantitatively
+
+For the multi-class classification, we extracted the title, meta description, and paragraph text from the HTML. We followed the same cleaning steps as the example preprocessing. We applied unigram tokenization for title and meta description. Paragraph text got both unigram and bigram tokenization. Tokens are prefixed by field, so a title word and a paragraph word are different features. We represented the cleaned text with TF-IDF over terms that occur at least 3 times, capped at the 10,000 most frequent. 
 
 ### Methods
 
 Describe your final predictive models. Include one paragraph with details on the binary classification approach, and one on the multiclass approach. Include for each:
 
--   what ML/statistical method was used
+- what ML/statistical method was used
 
--   model specification and hyperparameter selection
+- model specification and hyperparameter selection
 
--   training method
+- training method
+
+For the multi-class classification, we went with a linear SVM (one-vs-rest), tuning the cost parameter with 5-fold stratified CV. The best model was selected based on accuracy. The train-test split was 80/20 stratified split.
 
 ### Results
 
 Indicate the predictive accuracy of the binary classifications and the multiclass classifications. Provide a table for each, and report sensitivity, specificity, and accuracy.[^1]
 
 [^1]: Read [this article](https://yardstick.tidymodels.org/articles/multiclass.html) on multiclass averaging.
+
+```{r, echo = FALSE}
+library(knitr)
+summary_tbl <- data.frame(
+  Metric = c("Accuracy",
+             "Sensitivity (macro-averaged)",
+             "Specificity (macro-averaged)"),
+  `Value (%)` = sprintf("%.1f", c(83.9, 74.6, 95.0)),
+  check.names = FALSE
+)
+kable(summary_tbl, align = c("l", "r"),
+      caption = "Multiclass test-set performance")
+```
