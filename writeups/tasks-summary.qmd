@@ -6,11 +6,16 @@ date: today
 
 ### HTML scraping
 
-Does including header content improve predictions? Answer the question and provide quantitative evidence supporting your answer.
+We tested whether adding HTML headings to paragraph text improved binary claims classification. We built two versions of the text for each webpage. The first contained only paragraphs, while the second included paragraphs and headings from `<h1>` through `<h6>`. For each version, we fit a logistic regression model using principal components of the TF-IDF-weighted word features. Both models used the same stratified 80/20 training and validation split, so we evaluated them on the same webpages.
+
+Validation accuracy increased from **52.21% with paragraphs alone** to **59.44% with paragraphs and headings**, a gain of **7.23 percentage points**. For this model and validation split, including headings improved predictions, suggesting that headings contain information relevant to a webpage's claims status.
 
 ### Bigrams
 
-Do bigrams capture additional information relevant to the classification of interest? Answer the question, **briefly** describe what analysis you conducted to arrive at your answer, and provide quantitative evidence supporting your answer.
+We tested whether pairs of consecutive words, or bigrams, improved predictions beyond a model based on individual words. We used paragraph text for both models. We first fit a logistic principal component regression model using individual words. We then fit a second logistic regression model that combined the word model's predicted log-odds with 10 principal components derived from bigrams. To train the second model, we generated the word model's predictions through five-fold cross-validation within the training set. This meant that each training page's predicted log-odds came from a model fit without that page.
+
+The word-only model achieved **49.42% validation accuracy**, and the combined model achieved **59.91%**, a gain of **10.49 percentage points**. The improvement suggests that bigrams helped distinguish the two claims classes. A bigram can preserve a short phrase that the word-only model represents as separate words.
+
 
 ### Neural net
 
