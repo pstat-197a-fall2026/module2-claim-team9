@@ -1,0 +1,181 @@
+---
+title: "3-model"
+output: html_document
+date: "2026-11-11"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, warning=FALSE, message=FALSE}
+# loads the code and results from preliminary tasks 1-2
+
+setwd("/Users/phillipphi/Desktop/Pstat 197A/module2-claim-team9")
+source("scripts/preliminary 1&2/preliminary-tasks.R")
+```
+
+```{r, warning=FALSE}
+library(tidymodels)
+library(tidytext)
+library(keras)
+library(tensorflow)
+library(tokenizers)
+```
+
+```{r}
+load("../../data/claims-raw.RData")
+```
+
+```{r}
+# uses preliminary 1&2 tokenization method (found in fit_pcr)
+tokens <- claims %>%
+    select(.id, text = all_of("paragraph_heading")) %>%
+    unnest_tokens(term, text) %>%
+    anti_join(stop_words, by = c("term" = "word"))
+```
+
+```{r}
+# calculates the tf-idf values for our training partitioned data
+claims_tf_idf <- tokens %>% 
+  filter(.id %in% train$.id) %>% 
+  count(.id, term) %>%
+  bind_tf_idf(term = term,
+              document = .id,
+              n = n)
+
+train_df <- claims_tf_idf %>%
+  pivot_wider(id_cols = .id,
+              names_from = term,
+              values_from = tf_idf,
+              values_fill = 0)
+```
+
+```{r}
+# calculates the tf-idf values for our validation data
+# uses the idf results from training
+
+validation_df <- tokens %>%
+  
+  # calculates the tf values
+  filter(.id %in% validation$.id) %>%
+  count(.id, term) %>% 
+  group_by(.id) %>%
+  mutate(tf_2 = n / sum(n)) %>%
+  ungroup() %>%
+
+  # we only want to use words that are also in our training data
+  inner_join(claims_tf_idf %>% 
+              group_by(term) %>%
+              slice_head(n=1) %>%
+              select(term, idf),
+            by = "term") %>%
+  
+  # calculates the tf_idf values 
+  mutate(tf_idf = tf_2 * idf) %>%
+  pivot_wider(id_cols = .id,
+              names_from = term,
+              values_from = tf_idf,
+              values_fill = 0)
+```
+
+```{r}
+# ensures that our validation df has the same tokens as training
+# for all of the tokens not in validation, we add in 0 for their values
+missing_colnames <- colnames(train_df)[
+  !(colnames(train_df) %in% colnames(validation_df))]
+
+missing_cols <- matrix(rep(0, length(missing_colnames) * nrow(validation_df)), 
+                 nrow = nrow(validation_df), ncol = length(missing_colnames))
+
+colnames(missing_cols) <- missing_colnames
+
+# adds in our missing tokens
+# changes the order of columns in order to match our train_df
+validation_df <- bind_cols(validation_df, missing_cols)
+validation_df <- validation_df[, colnames(train_df)]
+```
+
+```{r}
+#there are some missing id columns, so we need to add them back
+print(length(train_y) == length(train_df$.id))
+print(length(validation_y) == length(validation_df$.id))
+```
+
+```{r}
+# left joins with our original validation and training data 
+# replaces all NA values with 0
+# adds back our missing id columns
+
+train_df <- train %>% 
+  select(.id) %>%
+  left_join(train_df, by = ".id")
+
+train_df[is.na(train_df)] <- 0
+
+validation_df <- validation %>%
+  select(.id) %>%
+  left_join(validation_df, by = ".id")
+
+validation_df[is.na(validation_df)] <- 0
+```
+
+
+```{r}
+# we already have train_y and validation_y from the preliminary 1&2
+# we just need to extract the training predictors
+# remove the id column since it's just an identifier
+
+train_x <- train_df %>%
+  ungroup() %>%
+  select(-.id) %>%
+  as.matrix()
+
+validation_x <- validation_df %>% 
+  ungroup() %>%
+  select(-.id) %>%
+  as.matrix()
+```
+
+```{r}
+# specifies that we want a feedforward network model
+nn_model <- keras_model_sequential(input_shape = ncol(train_x))
+
+nn_model <- nn_model %>% layer_dense(25) %>% layer_dense(1) 
+
+summary(nn_model)
+
+set_random_seed(11)
+
+# creates a logisitic regression model
+nn_model <- nn_model %>%
+  layer_activation(activation = "sigmoid") %>%
+  compile(loss = "binary_crossentropy",
+          optimizer = tf$keras$optimizers$legacy$SGD(),
+          metrics = "binary_accuracy")
+
+claims_mod <- nn_model %>%
+  fit(x = train_x, 
+      y = train_y, 
+      epochs = 200)
+
+plot(claims_mod)
+```
+
+```{r}
+evaluate(nn_model, train_x, train_y)
+```
+
+```{r}
+evaluate(nn_model, validation_x, validation_y)
+```
+
+
+
+
+
+
+
+
+
+
