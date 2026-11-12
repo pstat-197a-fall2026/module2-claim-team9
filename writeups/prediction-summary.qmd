@@ -8,7 +8,8 @@ date: today
 
 Provide a 3-5 sentence summary of your work on the primary task. Indicate what input data was used, what method was used for binary class predictions, what method was used for multiclass predictions, and what estimated accuracies were achieved.
 
-> *Header and paragraph content was scraped from the raw webpages and processed into term frequencies of word tokens. For binary classification, a two-layer neural network yielded an estimated 81.4% accuracy; for multiclass classification, a support vector machine gave 78% accuracy.*
+The text from page titles, meta descriptions, headers, and paragraphs were scraped from the raw HTML webpages. They were cleaned and converted into term frequencies of word tokens. For the binary classification, an elastic-net logistic regression achieved an estimated 80% accuracy (AUC about 0.87). For multiclass classification, a linear support vector machine achieved an estimated 78% (83.9???) accuracy. Both estimates come from held-out portions of the labeled data.
+
 
 ### Preprocessing
 
@@ -20,7 +21,9 @@ In one paragraph lay out your preprocessing pipeline. No need to provide exact s
 
 - how cleaned text was represented quantitatively
 
-For the multi-class classification, we extracted the title, meta description, and paragraph text from the HTML. We followed the same cleaning steps as the example preprocessing. We applied unigram tokenization for title and meta description. Paragraph text got both unigram and bigram tokenization. Tokens are prefixed by field, so a title word and a paragraph word are different features. We represented the cleaned text with TF-IDF over terms that occur at least 3 times, capped at the 10,000 most frequent. 
+For the binary classification, text was extracted from headers (h1 to h4) and paragraphs. We then removed the URLs, emails, punctuation, digits, and symbols and text was lowercased, stripped of stop words, and lemmatized. The pages were then represented by TF-IDF weights. The binary model used single words appearing on at least 5 training pages. Vocabulary and IDF weights were learned from training pages only and reused on test pages. Pages with no usable text (about 4% of the test set) received a default label.
+
+For the multi-class classification, we extracted the title, meta description, and paragraph text from the HTML. We followed the same cleaning steps as the example preprocessing. We applied unigram tokenization for title and meta description. Paragraph text got both unigram and bigram tokenization. Tokens are prefixed by field, so a title word and a paragraph word are different features. We represented the cleaned text with TF-IDF over terms that occur at least 3 times, capped at the 10,000 most frequent.
 
 ### Methods
 
@@ -32,11 +35,26 @@ Describe your final predictive models. Include one paragraph with details on the
 
 - training method
 
+For the binary classification, an elastic-net logistic regression (glmnet) was fit to the TF-IDF features. The mixing parameter was chosen from {0, 0.25, 0.5, 0.75, 1} by validation AUC, and ridge (0) was selected. The penalty strength was chosen by 10-fold cross-validation. The pages with no usable text were labeled as “N/A,” which is the most common label among such pages in the training data. The final model was refit on all labeled pages.
+
 For the multi-class classification, we went with a linear SVM (one-vs-rest), tuning the cost parameter with 5-fold stratified CV. The best model was selected based on accuracy. The train-test split was 80/20 stratified split.
 
 ### Results
 
 Indicate the predictive accuracy of the binary classifications and the multiclass classifications. Provide a table for each, and report sensitivity, specificity, and accuracy.[^1]
+
+The binary model reached about 80% accuracy (AUC about 0.87) on a held-out 20% of the labeled pages. Accuracy was nearly identical across all alpha values (79.9% to 80.6%). The multi-class model reached about 78% (83.9???) accuracy on its own held-out 20%. Each estimate comes from a single split, so each carries a margin of roughly 2 percentage points. The two models used different preprocessing and different splits, so the numbers are not directly comparable.
+
+```{r, echo = FALSE}
+bin_tbl <- data.frame(
+  Metric = c("Accuracy", "Sensitivity", "Specificity"),
+  `Value (%)` = sprintf("%.1f", c(80.4, 82.2, 78.0)),
+  check.names = FALSE
+)
+kable(bin_tbl, align = c("l", "r"),
+      caption = "Binary test-set performance")
+```
+
 
 [^1]: Read [this article](https://yardstick.tidymodels.org/articles/multiclass.html) on multiclass averaging.
 
