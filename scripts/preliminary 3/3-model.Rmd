@@ -15,7 +15,7 @@ setwd("/Users/phillipphi/Desktop/Pstat 197A/module2-claim-team9")
 source("scripts/preliminary 1&2/preliminary-tasks.R")
 ```
 
-```{r, warning=FALSE}
+```{r, warning=FALSE, message=FALSE}
 library(tidymodels)
 library(tidytext)
 library(keras)
@@ -28,16 +28,17 @@ load("../../data/claims-raw.RData")
 ```
 
 ```{r}
-# uses preliminary 1&2 tokenization method (found in fit_pcr)
-tokens <- claims %>%
-    select(.id, text = all_of("paragraph_heading")) %>%
-    unnest_tokens(term, text) %>%
-    anti_join(stop_words, by = c("term" = "word"))
+# uses preliminary 1&2 in order to get the validation set
+# just renames it to validation for clearer use 
+# uses similar code to how they get train_y to get the validation_y
+
+validation <- holdout
+validation_y <- labels(holdout_ids)
 ```
 
 ```{r}
 # calculates the tf-idf values for our training partitioned data
-claims_tf_idf <- tokens %>% 
+claims_tf_idf <- heading_tokens %>% 
   filter(.id %in% train$.id) %>% 
   count(.id, term) %>%
   bind_tf_idf(term = term,
@@ -55,7 +56,7 @@ train_df <- claims_tf_idf %>%
 # calculates the tf-idf values for our validation data
 # uses the idf results from training
 
-validation_df <- tokens %>%
+validation_df <- heading_tokens %>%
   
   # calculates the tf values
   filter(.id %in% validation$.id) %>%
@@ -138,36 +139,71 @@ validation_x <- validation_df %>%
 ```
 
 ```{r}
+set_random_seed(197)
+
 # specifies that we want a feedforward network model
 nn_model <- keras_model_sequential(input_shape = ncol(train_x))
 
-nn_model <- nn_model %>% layer_dense(25) %>% layer_dense(1) 
+# adds a hidden layer with 10 units and a hyperbolic tangent activation function
+# uses a sigmoid activation function for our output layer
+nn_model <- nn_model %>% 
+  layer_dense(units = 10, activation = "tanh") %>% 
+  layer_dense(units = 1, activation = "sigmoid") 
 
 summary(nn_model)
+```
 
-set_random_seed(11)
+```{r}
+set_random_seed(197)
 
-# creates a logisitic regression model
+# uses a binary cross-entropy loss function 
+# uses stochastic gradient descent
+# measures our binary accuracy
 nn_model <- nn_model %>%
-  layer_activation(activation = "sigmoid") %>%
   compile(loss = "binary_crossentropy",
           optimizer = tf$keras$optimizers$legacy$SGD(),
           metrics = "binary_accuracy")
 
+# fits the model to our training data
+# uses fitted model to make predictions on our validation data after each epoch
 claims_mod <- nn_model %>%
   fit(x = train_x, 
       y = train_y, 
-      epochs = 200)
+      epochs = 200,
+      validation_data = list(validation_x, validation_y))
 
+# graphs the loss and binary accuracy across epochs
 plot(claims_mod)
 ```
 
 ```{r}
-evaluate(nn_model, train_x, train_y)
+# results of our model on the training data
+
+train_eval <- evaluate(nn_model, train_x, train_y)
+train_eval
 ```
 
 ```{r}
-evaluate(nn_model, validation_x, validation_y)
+# results of the model on our validation data
+# the neural network validation has approxiamtely 4% higher accuracy
+
+validation_eval <- evaluate(nn_model, validation_x, validation_y)
+validation_eval
+```
+
+```{r, warning=FALSE}
+# uses similar code to the one in preliminary 1&2 to save our neural results
+
+setwd("/Users/phillipphi/Desktop/Pstat 197A/module2-claim-team9")
+
+write_csv(
+  tibble(
+    task1_accuracy = sprintf('%.2f', 100 * task1_h),
+    neural_validation_accuracy = sprintf('%.2f', 100 * validation_eval[2]),
+    accuracy_improvement = sprintf('%.2f', 100 * (validation_eval[2] - task1_h))
+  ),
+  'results/table/task3-accuracy-comparison.csv'
+)
 ```
 
 
