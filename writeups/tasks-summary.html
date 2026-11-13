@@ -2,25 +2,22 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.10.18">
+<meta name="generator" content="quarto-1.9.36">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="YOUR NAMES HERE">
-<meta name="dcterms.date" content="2026-11-11">
+<meta name="dcterms.date" content="2026-11-12">
 
 <title>Summary of exploratory tasks</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
 */
+code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
-div.columns{display: flex; gap: 1.5em;}
-div.column{flex: auto;}
-@media screen {
-div.columns{gap: min(4vw, 1.5em);}
-div.column{overflow-x: auto;}
-}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
 div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
 ul.task-list{list-style: none;}
 ul.task-list li input[type="checkbox"] {
@@ -38,10 +35,10 @@ ul.task-list li input[type="checkbox"] {
 <script src="tasks-summary_files/libs/quarto-html/tippy.umd.min.js"></script>
 <script src="tasks-summary_files/libs/quarto-html/anchor.min.js"></script>
 <link href="tasks-summary_files/libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="tasks-summary_files/libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="tasks-summary_files/libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="tasks-summary_files/libs/bootstrap/bootstrap.min.js"></script>
 <link href="tasks-summary_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="tasks-summary_files/libs/bootstrap/bootstrap-215b371544c282197b31c8aa00ce3677.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="tasks-summary_files/libs/bootstrap/bootstrap-efbb37e9afcc02144ebbc7afd12a776f.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 
 
 </head>
@@ -71,7 +68,7 @@ ul.task-list li input[type="checkbox"] {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">November 11, 2026</p>
+      <p class="date">November 12, 2026</p>
     </div>
   </div>
   
@@ -85,13 +82,11 @@ ul.task-list li input[type="checkbox"] {
 
 <section id="html-scraping" class="level3">
 <h3 class="anchored" data-anchor-id="html-scraping">HTML scraping</h3>
-<p>We tested whether adding HTML headings to paragraph text improved binary claims classification. We built two versions of the text for each webpage. The first contained only paragraphs, while the second included paragraphs and headings from <code>&lt;h1&gt;</code> through <code>&lt;h6&gt;</code>. For each version, we fit a logistic regression model using principal components of the TF-IDF-weighted word features. Both models used the same stratified 80/20 training and validation split, so we evaluated them on the same webpages.</p>
-<p>Validation accuracy increased from <strong>52.21% with paragraphs alone</strong> to <strong>59.44% with paragraphs and headings</strong>, a gain of <strong>7.23 percentage points</strong>. For this model and validation split, including headings improved predictions, suggesting that headings contain information relevant to a webpage’s claims status.</p>
+<p>We compared paragraph text (<code>&lt;p&gt;</code>) with paragraphs plus visible headings (<code>&lt;h1&gt;</code>–<code>&lt;h6&gt;</code>) for binary claims classification. Both models used unigram TF-IDF and logistic principal component regression, with a common vocabulary-filtering rule and PC count selected by training-set cross-validation; each model fit its own vocabulary and PCA from its training text. On the same held-out pages, accuracy rose from <strong>77.39% to 78.09%</strong> (<strong>+0.70 percentage points</strong>) and ROC AUC from <strong>0.8136 to 0.8332</strong> (<strong>+0.0196</strong>). Adding visible headings gave a small improvement on the held-out pages.</p>
 </section>
 <section id="bigrams" class="level3">
 <h3 class="anchored" data-anchor-id="bigrams">Bigrams</h3>
-<p>We tested whether pairs of consecutive words, or bigrams, improved predictions beyond a model based on individual words. We used paragraph text for both models. We first fit a logistic principal component regression model using individual words. We then fit a second logistic regression model that combined the word model’s predicted log-odds with 10 principal components derived from bigrams. To train the second model, we generated the word model’s predictions through five-fold cross-validation within the training set. This meant that each training page’s predicted log-odds came from a model fit without that page.</p>
-<p>The word-only model achieved <strong>49.42% validation accuracy</strong>, and the combined model achieved <strong>59.91%</strong>, a gain of <strong>10.49 percentage points</strong>. The improvement suggests that bigrams helped distinguish the two claims classes. A bigram can preserve a short phrase that the word-only model represents as separate words.</p>
+<p>We first used unigram logistic principal component regression on paragraph text to produce word-model log-odds, using out-of-fold predictions to train a second-stage logistic regression. We compared a second-stage model using only those log-odds with one that also used bigram principal components, evaluating both on the same held-out pages. Accuracy rose from <strong>67.60% to 70.40%</strong> (<strong>+2.80 percentage points</strong>) and ROC AUC from <strong>0.8109 to 0.8490</strong> (<strong>+0.0381</strong>). On the held-out pages, the bigram components provided predictive information beyond the word-model log-odds.</p>
 </section>
 <section id="neural-net" class="level3">
 <h3 class="anchored" data-anchor-id="neural-net">Neural net</h3>

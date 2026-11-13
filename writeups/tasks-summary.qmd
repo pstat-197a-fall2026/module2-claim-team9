@@ -6,15 +6,11 @@ date: today
 
 ### HTML scraping
 
-We tested whether adding HTML headings to paragraph text improved binary claims classification. We built two versions of the text for each webpage. The first contained only paragraphs, while the second included paragraphs and headings from `<h1>` through `<h6>`. For each version, we fit a logistic regression model using principal components of the TF-IDF-weighted word features. Both models used the same stratified 80/20 training and validation split, so we evaluated them on the same webpages.
-
-Validation accuracy increased from **52.21% with paragraphs alone** to **59.44% with paragraphs and headings**, a gain of **7.23 percentage points**. For this model and validation split, including headings improved predictions, suggesting that headings contain information relevant to a webpage's claims status.
+We compared paragraph text (`<p>`) with paragraphs plus visible headings (`<h1>`–`<h6>`) for binary claims classification. Both models used unigram TF-IDF and logistic principal component regression, with a common vocabulary-filtering rule and PC count selected by training-set cross-validation; each model fit its own vocabulary and PCA from its training text. On the same held-out pages, accuracy rose from **77.39% to 78.09%** (**+0.70 percentage points**) and ROC AUC from **0.8136 to 0.8332** (**+0.0196**). Adding visible headings gave a small improvement on the held-out pages.
 
 ### Bigrams
 
-We tested whether pairs of consecutive words, or bigrams, improved predictions beyond a model based on individual words. We used paragraph text for both models. We first fit a logistic principal component regression model using individual words. We then fit a second logistic regression model that combined the word model's predicted log-odds with 10 principal components derived from bigrams. To train the second model, we generated the word model's predictions through five-fold cross-validation within the training set. This meant that each training page's predicted log-odds came from a model fit without that page.
-
-The word-only model achieved **49.42% validation accuracy**, and the combined model achieved **59.91%**, a gain of **10.49 percentage points**. The improvement suggests that bigrams helped distinguish the two claims classes. A bigram can preserve a short phrase that the word-only model represents as separate words.
+We first used unigram logistic principal component regression on paragraph text to produce word-model log-odds, using out-of-fold predictions to train a second-stage logistic regression. We compared a second-stage model using only those log-odds with one that also used bigram principal components, evaluating both on the same held-out pages. Accuracy rose from **67.60% to 70.40%** (**+2.80 percentage points**) and ROC AUC from **0.8109 to 0.8490** (**+0.0381**). On the held-out pages, the bigram components provided predictive information beyond the word-model log-odds.
 
 
 ### Neural net
