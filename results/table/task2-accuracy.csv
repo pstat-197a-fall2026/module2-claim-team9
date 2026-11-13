@@ -1,3 +1,2 @@
-model,validation_accuracy,difference_from_baseline
-Word only,0.49417249417249415,0
-Word plus bigrams,0.5990675990675991,0.10489510489510495
+word_log_odds_only_accuracy_pct,word_log_odds_plus_bigram_pcs_accuracy_pct,change_after_adding_bigrams_pp,word_log_odds_only_roc_auc,word_log_odds_plus_bigram_pcs_roc_auc,change_after_adding_bigrams_auc
+67.60,70.40,2.80,0.8109,0.8490,0.0381

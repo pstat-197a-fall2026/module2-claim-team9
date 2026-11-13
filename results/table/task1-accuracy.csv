@@ -1,3 +1,2 @@
-model,validation_accuracy,difference_from_baseline
-Paragraph only,0.5221445221445221,0
-Paragraph plus headings,0.5944055944055944,0.07226107226107226
+paragraph_only_accuracy_pct,paragraph_plus_headings_accuracy_pct,change_after_adding_headings_pp,paragraph_only_roc_auc,paragraph_plus_headings_roc_auc,change_after_adding_headings_auc
+77.39,78.09,0.70,0.8136,0.8332,0.0196
