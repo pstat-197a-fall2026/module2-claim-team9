@@ -1,6 +1,6 @@
 ---
 title: "Predictive modeling of claims status"
-author: 'Phillip, Caroline, Aileen, Tyler'
+author: 'Phillip Phi, Caroline Liu, Aileen Tao, Tyler Hoong'
 date: today
 ---
 
