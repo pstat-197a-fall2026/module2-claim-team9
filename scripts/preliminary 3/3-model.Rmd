@@ -142,15 +142,15 @@ validation_x <- validation_df %>%
 set_random_seed(197)
 
 # specifies that we want a feedforward network model
-nn_model <- keras_model_sequential(input_shape = ncol(train_x))
+nn_model_v1 <- keras_model_sequential(input_shape = ncol(train_x))
 
 # adds a hidden layer with 10 units and a hyperbolic tangent activation function
 # uses a sigmoid activation function for our output layer
-nn_model <- nn_model %>% 
+nn_model_v1 <- nn_model_v1 %>% 
   layer_dense(units = 10, activation = "tanh") %>% 
   layer_dense(units = 1, activation = "sigmoid") 
 
-summary(nn_model)
+summary(nn_model_v1)
 ```
 
 ```{r}
@@ -159,40 +159,86 @@ set_random_seed(197)
 # uses a binary cross-entropy loss function 
 # uses stochastic gradient descent
 # measures our binary accuracy
-nn_model <- nn_model %>%
+nn_model_v1 <- nn_model_v1 %>%
   compile(loss = "binary_crossentropy",
           optimizer = tf$keras$optimizers$legacy$SGD(),
           metrics = "binary_accuracy")
 
 # fits the model to our training data
 # uses fitted model to make predictions on our validation data after each epoch
-claims_mod <- nn_model %>%
+claims_mod_v1 <- nn_model_v1 %>%
   fit(x = train_x, 
       y = train_y, 
       epochs = 200,
       validation_data = list(validation_x, validation_y))
 
 # graphs the loss and binary accuracy across epochs
-plot(claims_mod)
+plot(claims_mod_v1)
 ```
 
 ```{r}
-# results of our model on the training data
+# results of our SGD model on the training data
 
-train_eval <- evaluate(nn_model, train_x, train_y)
+train_eval <- evaluate(nn_model_v1, train_x, train_y)
 train_eval
 ```
 
 ```{r}
-# results of the model on our validation data
-# the neural network validation has approxiamtely 4% higher accuracy
+# results of the SGD model on our validation data
+# the neural network validation has approximately 4 percentage higher accuracy than task1
 
-validation_eval <- evaluate(nn_model, validation_x, validation_y)
+validation_eval <- evaluate(nn_model_v1, validation_x, validation_y)
 validation_eval
 ```
 
+```{r}
+# adam optimizer results
+# uses the same code as above, except now we utilize "adam" optimizer instead
+# the training binary accuracy is incredibly high 
+# binary accuracy peaked in much fewer epochs than SGD
+# after validation accuracy peaked, loss function started increasing
+# we will choose to use our SGD model instead 
+# SGD model had better validation accuracy 
+# SGD had smaller gap between validation and training accuracy
+
+set_random_seed(197)
+
+nn_model_v2 <- keras_model_sequential(input_shape = ncol(train_x))
+
+nn_model_v2 <- nn_model_v2 %>% 
+  layer_dense(units = 10, activation = "tanh") %>% 
+  layer_dense(units = 1, activation = "sigmoid") 
+
+nn_model_v2 <- nn_model_v2 %>%
+  compile(loss = "binary_crossentropy",
+          optimizer = "adam",
+          metrics = "binary_accuracy")
+
+claims_mod_v2 <- nn_model_v2 %>%
+  fit(x = train_x, 
+      y = train_y, 
+      epochs = 200,
+      validation_data = list(validation_x, validation_y))
+
+plot(claims_mod_v2)
+```
+
+```{r}
+# results of our adam model on the training data
+
+evaluate(nn_model_v2, train_x, train_y)
+```
+
+```{r}
+# results of our adam model on the validation data
+
+evaluate(nn_model_v2, validation_x, validation_y)
+```
+
+
 ```{r, warning=FALSE}
 # uses similar code to the one in preliminary 1&2 to save our neural results
+# uses our neural network results from our SGD model
 
 setwd("/Users/phillipphi/Desktop/Pstat 197A/module2-claim-team9")
 
