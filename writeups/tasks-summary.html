@@ -2,22 +2,25 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.9.36">
+<meta name="generator" content="quarto-1.10.18">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="author" content="YOUR NAMES HERE">
-<meta name="dcterms.date" content="2026-11-12">
+<meta name="author" content="Aileen Tao, Phillip Phi">
+<meta name="dcterms.date" content="2026-11-13">
 
 <title>Summary of exploratory tasks</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
 */
-code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
-div.columns{display: flex; gap: min(4vw, 1.5em);}
-div.column{flex: auto; overflow-x: auto;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
 div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
 ul.task-list{list-style: none;}
 ul.task-list li input[type="checkbox"] {
@@ -35,11 +38,40 @@ ul.task-list li input[type="checkbox"] {
 <script src="tasks-summary_files/libs/quarto-html/tippy.umd.min.js"></script>
 <script src="tasks-summary_files/libs/quarto-html/anchor.min.js"></script>
 <link href="tasks-summary_files/libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="tasks-summary_files/libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="tasks-summary_files/libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="tasks-summary_files/libs/bootstrap/bootstrap.min.js"></script>
 <link href="tasks-summary_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="tasks-summary_files/libs/bootstrap/bootstrap-efbb37e9afcc02144ebbc7afd12a776f.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="tasks-summary_files/libs/bootstrap/bootstrap-917079515d91bccb85b543faf8aa8bb6.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 </head>
 
@@ -61,14 +93,14 @@ ul.task-list li input[type="checkbox"] {
     <div>
     <div class="quarto-title-meta-heading">Author</div>
     <div class="quarto-title-meta-contents">
-             <p>YOUR NAMES HERE </p>
+             <p>Aileen Tao, Phillip Phi </p>
           </div>
   </div>
     
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">November 12, 2026</p>
+      <p class="date">November 13, 2026</p>
     </div>
   </div>
   
@@ -97,6 +129,9 @@ ul.task-list li input[type="checkbox"] {
 <li><p>training epochs</p></li>
 <li><p>predictive accuracy</p></li>
 </ul>
+<p>Our neural network model utilizes a feedforward network with 31570 inputs or predictors. These inputs originate from our training dataset, train_x, where each row represents an individual webpage, and its respective columns are the various word tokens and their TF-IDF values. Therefore, each input is simply the TF-IDF score for that specific token column. With regard to our single hidden layer, it has a unit size of 10, meaning every predictor is combined into 10 groups with various weights, and utilizes a hyperbolic tangent activation function, “tanh,” to determine the contribution of each unit towards the output layer. It also possesses 315710 parameters, stemming from a combination of our unit number and amount of inputs, calculated by (unit number <span class="math inline">\(\times\)</span> input number + unit number), which in this case would be (10 <span class="math inline">\(\times\)</span> 31570 + 10 = 315710). We apply the same logic to the output layer, where it only has a unit size of 1, and therefore, its parameter number is (1 <span class="math inline">\(\times\)</span> 10 + 1 = 11), resulting in 315721 total parameters across both layers. In the final output, the sigmoid activation function is used to calculate the probability of the webpage containing relevant information, which is then used to determine the binary classification. Overall, our model is a relatively vanilla model.</p>
+<p>When configuring our model, we chose a binary cross-entropy loss function to minimize, “binary_crossentropy”, and the optimization technique we decided to pair it with is stochastic gradient descent, “tf$keras$optimizers$legacy$SGD().” Through our testing, SGD did not perform well on lower epoch numbers, and as visualized in our graph, did not seem to improve the validation binary accuracy until close to 80 epochs, where there is an overall gradual increase in accuracy. However, their progress stagnates after approximately 190 epochs, so we limit it to 200. A change of optimizer to “adam” was considered, but was ultimately discarded due to massive discrepancies between the training and validation accuracy. It required less epochs to reach their optimal binary accuracies, but if too many were employed, the validation loss function would start increasing rather than our intended minimization. Additionally, despite having a much higher training accuracy, the “adam” optimizer would return a validation accuracy incredibly close in value to our SGD optimizer, so we decided to retain the SGD model.</p>
+<p>The results from our model on the validation set return a binary accuracy score of approximately 82.28%, only 4.5% lower than the training accuracy, which is a good sign that our model did not overfit onto the training data. Compared to our task 1 accuracy score of 78.09%, obtained through principal component logistic regression with header information, our neural network performed about 4.2% better in terms of binary classification, meaning neural networks may be an appropriate way to determine webpage relevancy.</p>
 </section>
 
 </main>

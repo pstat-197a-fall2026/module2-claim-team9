@@ -1,6 +1,6 @@
 ---
 title: "Summary of exploratory tasks"
-author: 'YOUR NAMES HERE'
+author: 'Aileen Tao, Phillip Phi'
 date: today
 ---
 
@@ -24,3 +24,9 @@ Summarize the neural network model you trained by desribing:
 -   training epochs
 
 -   predictive accuracy
+
+Our neural network model utilizes a feedforward network with 31570 inputs or predictors. These inputs originate from our training dataset, train_x, where each row represents an individual webpage, and its respective columns are the various word tokens and their TF-IDF values. Therefore, each input is simply the TF-IDF score for that specific token column. With regard to our single hidden layer, it has a unit size of 10, meaning every predictor is combined into 10 groups with various weights, and utilizes a hyperbolic tangent activation function, "tanh," to determine the contribution of each unit towards the output layer. It also possesses 315710 parameters, stemming from a combination of our unit number and amount of inputs, calculated by (unit number $\times$ input number + unit number), which in this case would be (10 $\times$ 31570 + 10 = 315710). We apply the same logic to the output layer, where it only has a unit size of 1, and therefore, its parameter number is (1 $\times$ 10 + 1 = 11), resulting in 315721 total parameters across both layers. In the final output, the sigmoid activation function is used to calculate the probability of the webpage containing relevant information, which is then used to determine the binary classification. Overall, our model is a relatively vanilla model. 
+
+When configuring our model, we chose a binary cross-entropy loss function to minimize, "binary_crossentropy", and the optimization technique we decided to pair it with is stochastic gradient descent, "tf\$keras\$optimizers\$legacy\$SGD()." Through our testing, SGD did not perform well on lower epoch numbers, and as visualized in our graph, did not seem to improve the validation accuracy until close to 80 epochs, where there is an overall gradual increase in accuracy. However, their progress stagnates after approximately 190 epochs, so we limit it to 200. A change of optimizer to "adam" was considered, but was ultimately discarded due to massive discrepancies between the training and validation accuracy. It required less epochs to reach their optimal binary accuracies, but if too many were employed, the validation loss function would start increasing rather than our intended minimization. Additionally, despite having a much higher training accuracy, the "adam" optimizer would return a validation accuracy incredibly close in value to our SGD optimizer, so we decided to retain the SGD model. 
+
+The results from our model on the validation set return a binary accuracy score of approximately 82.28%, only 4.5% lower than the training accuracy, which is a good sign that our model did not overfit onto the training data. Compared to our task 1 accuracy score of 78.09%, obtained through principal component logistic regression with header information, our neural network performed about 4.2% better in terms of binary classification, meaning neural networks may be an appropriate way to determine webpage relevancy.
