@@ -41,7 +41,7 @@ ul.task-list li input[type="checkbox"] {
 <link href="tasks-summary_files/libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="tasks-summary_files/libs/bootstrap/bootstrap.min.js"></script>
 <link href="tasks-summary_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="tasks-summary_files/libs/bootstrap/bootstrap-917079515d91bccb85b543faf8aa8bb6.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="tasks-summary_files/libs/bootstrap/bootstrap-215b371544c282197b31c8aa00ce3677.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 
   <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
   <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
@@ -114,11 +114,11 @@ window.Quarto = {
 
 <section id="html-scraping" class="level3">
 <h3 class="anchored" data-anchor-id="html-scraping">HTML scraping</h3>
-<p>We compared paragraph text (<code>&lt;p&gt;</code>) with paragraphs plus visible headings (<code>&lt;h1&gt;</code>–<code>&lt;h6&gt;</code>) for binary claims classification. Both models used unigram TF-IDF and logistic principal component regression, with a common vocabulary-filtering rule and PC count selected by training-set cross-validation; each model fit its own vocabulary and PCA from its training text. On the same held-out pages, accuracy rose from <strong>77.39% to 78.09%</strong> (<strong>+0.70 percentage points</strong>) and ROC AUC from <strong>0.8136 to 0.8332</strong> (<strong>+0.0196</strong>). Adding visible headings gave a small improvement on the held-out pages.</p>
+<p>We compared two versions of each webpage for binary claims classification. The first used paragraph text (<code>&lt;p&gt;</code>), and the second added visible headings (<code>&lt;h1&gt;</code>–<code>&lt;h6&gt;</code>). For each version, we built unigram TF-IDF features, fit PCA on the training pages, and used the resulting component scores in a logistic regression. We used five-fold cross-validation within the training set to select a common vocabulary-filtering rule and number of components. On the same 429 held-out webpages, adding headings increased accuracy from 77.39% to 78.09% (+0.70 percentage points) and ROC AUC from 0.8136 to 0.8332 (+0.0196).</p>
 </section>
 <section id="bigrams" class="level3">
 <h3 class="anchored" data-anchor-id="bigrams">Bigrams</h3>
-<p>We first used unigram logistic principal component regression on paragraph text to produce word-model log-odds, using out-of-fold predictions to train a second-stage logistic regression. We compared a second-stage model using only those log-odds with one that also used bigram principal components, evaluating both on the same held-out pages. Accuracy rose from <strong>67.60% to 70.40%</strong> (<strong>+2.80 percentage points</strong>) and ROC AUC from <strong>0.8109 to 0.8490</strong> (<strong>+0.0381</strong>). On the held-out pages, the bigram components provided predictive information beyond the word-model log-odds.</p>
+<p>We formed bigrams from adjacent words within each paragraph, converted the bigram counts to TF-IDF features, and fit PCA on the training pages. A unigram logistic principal component regression model supplied predicted log-odds for a second-stage logistic regression. Each training page’s log-odds came from a model fit on the other folds. We compared a second-stage model using only those log-odds with one that also included the bigram component scores. On the same 429 held-out webpages, adding bigram components increased accuracy from 67.60% to 70.40% (+2.80 percentage points) and ROC AUC from 0.8109 to 0.8490 (+0.0381). This suggests that bigrams added predictive information beyond the word model on this split.</p>
 </section>
 <section id="neural-net" class="level3">
 <h3 class="anchored" data-anchor-id="neural-net">Neural net</h3>

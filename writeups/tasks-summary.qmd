@@ -6,12 +6,11 @@ date: today
 
 ### HTML scraping
 
-We compared paragraph text (`<p>`) with paragraphs plus visible headings (`<h1>`–`<h6>`) for binary claims classification. Both models used unigram TF-IDF and logistic principal component regression, with a common vocabulary-filtering rule and PC count selected by training-set cross-validation; each model fit its own vocabulary and PCA from its training text. On the same held-out pages, accuracy rose from **77.39% to 78.09%** (**+0.70 percentage points**) and ROC AUC from **0.8136 to 0.8332** (**+0.0196**). Adding visible headings gave a small improvement on the held-out pages.
+We compared two versions of each webpage for binary claims classification. The first used paragraph text (`<p>`), and the second added visible headings (`<h1>`–`<h6>`). For each version, we built unigram TF-IDF features, fit PCA on the training pages, and used the resulting component scores in a logistic regression. We used five-fold cross-validation within the training set to select a common vocabulary-filtering rule and number of components. On the same 429 held-out webpages, adding headings increased accuracy from 77.39% to 78.09% (+0.70 percentage points) and ROC AUC from 0.8136 to 0.8332 (+0.0196).
 
 ### Bigrams
 
-We first used unigram logistic principal component regression on paragraph text to produce word-model log-odds, using out-of-fold predictions to train a second-stage logistic regression. We compared a second-stage model using only those log-odds with one that also used bigram principal components, evaluating both on the same held-out pages. Accuracy rose from **67.60% to 70.40%** (**+2.80 percentage points**) and ROC AUC from **0.8109 to 0.8490** (**+0.0381**). On the held-out pages, the bigram components provided predictive information beyond the word-model log-odds.
-
+We formed bigrams from adjacent words within each paragraph, converted the bigram counts to TF-IDF features, and fit PCA on the training pages. A unigram logistic principal component regression model supplied predicted log-odds for a second-stage logistic regression. Each training page’s log-odds came from a model fit on the other folds. We compared a second-stage model using only those log-odds with one that also included the bigram component scores. On the same 429 held-out webpages, adding bigram components increased accuracy from 67.60% to 70.40% (+2.80 percentage points) and ROC AUC from 0.8109 to 0.8490 (+0.0381). This suggests that bigrams added predictive information beyond the word model on this split.
 
 ### Neural net
 
